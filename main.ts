@@ -9,7 +9,6 @@ function run(p: Uint8Array, inp: Uint8Array): { c: number; o: Uint8Array } {
   const C = new Int32Array(64);
   const M = new Int32Array(256);
   const out = new Uint8Array(65536);
-  const dig = new Uint8Array(11);
   let sp = 0, cp = 0, pc = 0, ip = 0, st = 0, ol = 0;
   const n = p.length;
   const done = (c: number): { c: number; o: Uint8Array } => ({ c, o: out.subarray(0, ol) });
@@ -78,7 +77,7 @@ function run(p: Uint8Array, inp: Uint8Array): { c: number; o: Uint8Array } {
         else if (op === 0x12) r = Math.imul(a, b);
         else if (op === 0x13) {
           if (b === 0) return done(4);
-          r = a === -2147483648 && b === -1 ? a : (a / b) | 0;
+          r = (a / b) | 0;
         } else if (op === 0x14) {
           if (b === 0) return done(4);
           r = b === -1 ? 0 : (a % b) | 0;
@@ -131,16 +130,10 @@ function run(p: Uint8Array, inp: Uint8Array): { c: number; o: Uint8Array } {
         break;
       case 0x50: {
         if (sp < 1) return done(2);
-        const v = D[sp - 1];
-        const neg = v < 0;
-        let u = neg ? (v === -2147483648 ? 2147483648 : -v) : v;
-        let k = 0;
-        do { dig[k++] = 48 + (u % 10); u = (u / 10) | 0; } while (u > 0);
-        const len = k + (neg ? 1 : 0);
-        if (ol + len > 65536) return done(11);
+        const s = String(D[sp - 1]);
+        if (ol + s.length > 65536) return done(11);
         sp--;
-        if (neg) out[ol++] = 45;
-        for (let i = k - 1; i >= 0; i--) out[ol++] = dig[i];
+        for (let i = 0; i < s.length; i++) out[ol++] = s.charCodeAt(i);
         break;
       }
       case 0x51:
